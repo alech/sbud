@@ -118,8 +118,15 @@ def outputEls(content, theme, struc, leaves, depth):
 
 
   fieldVals = []
+  prevOffsetAndSize = (0, 0)
+  prevColor = theme.highlights[0]
   for i, el in enumerate(sorted(leaves, key=lambda x:int(x["offset"]))):
     color = theme.highlights[i % len(theme.highlights)]
+    # if we are highlighting the same field, use the same (aka prev) color:
+    currOffsetAndSize = (el["offset"], el["size"])
+    if currOffsetAndSize == prevOffsetAndSize:
+        color = prevColor
+
     fieldVals.append([fg("+%02x" % (el["offset"] - offset), theme.hex), fg(el["name"], color), fg(el["value"], color)])
 
     lineOffset = el["offset"] - el["offset"] % 16
@@ -127,6 +134,8 @@ def outputEls(content, theme, struc, leaves, depth):
     lines[lineOffset].openTag(0, theme.dimmed)
     if (el["offset"] % 16)+el["size"] > 16:
       lines[lineOffset+16].fg(0, (el["offset"]+el["size"]-16 - lineOffset)*3 - 2, color)
+    prevOffsetAndSize = currOffsetAndSize
+    prevColor = color
 
   width = max(rawLen(x[1]) for x in fieldVals)
 
