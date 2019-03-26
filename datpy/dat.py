@@ -120,12 +120,18 @@ def outputEls(content, theme, struc, leaves, depth):
   fieldVals = []
   prevOffsetAndSize = (0, 0)
   prevColor = theme.highlights[0]
-  for i, el in enumerate(sorted(leaves, key=lambda x:int(x["offset"]))):
+  for i, el in enumerate(sorted(leaves, key=lambda x:(int(x["offset"]), -1*int(x["size"])))):
+    highlighingPartOfPrev = False
     color = theme.highlights[i % len(theme.highlights)]
     # if we are highlighting the same field, use the same (aka prev) color:
     currOffsetAndSize = (el["offset"], el["size"])
     if currOffsetAndSize == prevOffsetAndSize:
         color = prevColor
+    # we are highlighting just a part of the previous field
+    if el["offset"] >= prevOffsetAndSize[0] and \
+       el["offset"] + el["size"] <= prevOffsetAndSize[0] + prevOffsetAndSize[1]:
+        color = prevColor
+        highlighingPartOfPrev = True
 
     fieldVals.append([fg("+%02x" % (el["offset"] - offset), theme.hex), fg(el["name"], color), fg(el["value"], color)])
 
@@ -134,8 +140,9 @@ def outputEls(content, theme, struc, leaves, depth):
     lines[lineOffset].openTag(0, theme.dimmed)
     if (el["offset"] % 16)+el["size"] > 16:
       lines[lineOffset+16].fg(0, (el["offset"]+el["size"]-16 - lineOffset)*3 - 2, color)
-    prevOffsetAndSize = currOffsetAndSize
-    prevColor = color
+    if not highlighingPartOfPrev:
+      prevOffsetAndSize = currOffsetAndSize
+      prevColor = color
 
   width = max(rawLen(x[1]) for x in fieldVals)
 
